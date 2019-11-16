@@ -19,8 +19,12 @@ try:
 except IndexError:
     print(bcolors.OKGREEN,"Hess-tool: Normal mode analysis of ORCA-Hessian",bcolors.ENDC)
     print(bcolors.OKGREEN,"Script usage: Hess-tool.py ORCA-Hessianfile Atomgroup", bcolors.ENDC)
-    print(bcolors.WARNING,"Atomgroup option: 'all' , 'elements' or  'X' (where X is specific atomnumber)   (numbering starts from 0)",bcolors.ENDC)
+    print(bcolors.WARNING,"Atomgroup option: 'all' , 'elements', 'X' (where X is specific atomnumber) or \'X,Y,M\' (where X, Y, M etc. are atom numbers)", bcolors.ENDC)
+    print(bcolors.WARNING,"Atom numbering starts from 0.",bcolors.ENDC)
+    print(bcolors.WARNING,"Example: ./Hess-tool.py file.hess all", bcolors.ENDC)
     print(bcolors.WARNING,"Example: ./Hess-tool.py file.hess elements", bcolors.ENDC)
+    print(bcolors.WARNING,"Example: ./Hess-tool.py file.hess 2", bcolors.ENDC)
+    print(bcolors.WARNING,"Example: ./Hess-tool.py file.hess 2,3,8,9", bcolors.ENDC)
     quit()
 
 ###############
@@ -140,6 +144,12 @@ elif isint(option)==True:
     print(bcolors.OKBLUE,"Option: atom", option, "composition only.",bcolors.ENDC)
     print("")
     print("Normal modes and the composition factor for atom:", int(option))
+elif len(option.split(",")) > 1:
+    selatoms=option.split(",")
+    #selatoms=[int(i) for i in selatoms]
+    print(bcolors.OKBLUE,"Option: Atom-list:", ', '.join(selatoms), " group composition.",bcolors.ENDC)
+    print("")
+    print("Normal modes and the composition factor for atom-group:", ', '.join(selatoms))
 else:
     print(bcolors.FAIL,"Unknown option. Doing all atoms.",bcolors.ENDC)
     option="all"
@@ -152,6 +162,7 @@ atomlist=[]
 for i,j in enumerate(elems):
     atomlist.append(str(j)+'-'+str(i))
 
+#print(atomlist)
 #Grab Hessian from Hessianfile
 hessian=Hessgrab(hessfile)
 
@@ -170,6 +181,7 @@ nmodes = np.dot(evectors,massmatrix)
 
 #Normalmodecomposition factors for mode j and atom a
 if option=="all":
+    #Case: All atoms
     line = "{}   {}    {}".format("Mode", "Freq(cm**-1)", '     '.join(atomlist))
     print(line)
     for mode in range(0,3*numatoms):
@@ -186,6 +198,7 @@ if option=="all":
             line = "{:2d}     {:4.4f}        {}".format(mode, vib, '   '.join(normcomplist))
             print(line)
 elif option=="elements":
+    #Case: By elements
     uniqelems=[]
     for i in elems:
         if i not in uniqelems:
@@ -214,6 +227,7 @@ elif option=="elements":
             line = "{:2d}     {:4.4f}        {}".format(mode, vib, '   '.join(elementnormcomplist))
             print(line)
 elif isint(option)==True:
+    #Case: Specific atom
     atom=int(option)
     if atom > numatoms-1:
         print(bcolors.FAIL,"Atom index does not exist. Note: Numbering starts from 0",bcolors.ENDC)
@@ -233,4 +247,34 @@ elif isint(option)==True:
             normcomplist=['{:.6f}'.format(x) for x in normcomplist]
             line = "{:2d}     {:4.4f}        {}".format(mode, vib, normcomplist[atom])
             print(line)
-
+elif len(option.split(",")) > 1:
+    #Case: Chemical group defined as list of atoms
+    selatoms=[int(i) for i in selatoms]
+    grouplist=[]
+    for at in selatoms:
+        if at > numatoms-1:
+            print(bcolors.FAIL,"Atom index does not exist. Note: Numbering starts from 0",bcolors.ENDC)
+            exit()
+        grouplist.append(atomlist[at])
+    grouplist=', '.join(grouplist)
+    line = "{}   {}    {}".format("Mode", "Freq(cm**-1)", "Group("+grouplist+")")
+    print(line)
+    for mode in range(0,3*numatoms):
+        normcomplist=[]
+        if mode < TRmodenum:
+            line = "{:2d}      {:2.4f}".format(mode,0.000)
+            print(line)
+        else:
+            vib=clean_number(vfreq[mode])
+            for n in range(0,numatoms):
+                normcomp=normalmodecomp(evectors,mode,n)
+                normcomplist.append(normcomp)
+            #normcomplist=['{:.6f}'.format(x) for x in normcomplist]
+            groupnormcomplist=[]
+            for q in selatoms:
+                groupnormcomplist.append(normcomplist[q])
+            sumgroupnormcomplist='{:.6f}'.format(sum(groupnormcomplist))
+            line = "{:2d}     {:4.4f}        {}".format(mode, vib, sumgroupnormcomplist)
+            print(line)
+else:
+    print("Something went wrong")
