@@ -7,7 +7,7 @@ import os
 import sys
 from numpy import linalg as la
 
-#Assuming nonlinear molecule. Change to 5 if linear
+#Assuming nonlinear molecule. Will be changed to 5 if diatomic. Other linear detection not present
 TRmodenum=6
 
 
@@ -73,14 +73,16 @@ def Hessgrab(hessfile):
     orcacoldim=5
     shiftpar=0
     lastchunk=False
+    grabsize=False
     with open(hessfile) as hfile:
         for line in hfile:
-            #print(len(line))
             if '$vibrational_frequencies' in line:
                 hesstake=False
                 continue
-            if hesstake==True and len(line.split()) == 1:
+            if hesstake==True and len(line.split()) == 1 and grabsize==True:
+                grabsize=False
                 hessdim=int(line.split()[0])
+                
                 hessarray2d=np.zeros((hessdim, hessdim))
             if hesstake==True and len(line.split()) == 5:
                 continue
@@ -102,6 +104,7 @@ def Hessgrab(hessfile):
                         lastchunk=True
             if '$hessian' in line:
                 hesstake=True
+                grabsize=True
     return hessarray2d
 
 def massweight(matrix):
@@ -112,15 +115,27 @@ def massweight(matrix):
     mwhessian = np.dot((np.dot(mass_mat,matrix)),mass_mat)
     return mwhessian,mass_mat
 
+#
 def calcfreq(evalues):
     hartree2j = 4.3597438e-18
-    bohr2m = 5.29177208e-11
+    bohr2m = 5.29177210903e-11
     amu2kg = 1.66054e-27
     c = 2.99792458e10
     pi = np.pi
     evalues_si = [val*hartree2j/bohr2m/bohr2m/amu2kg for val in evalues]
     vfreq_hz = [1/(2*pi)*np.sqrt(np.complex_(val)) for val in evalues_si]
     vfreq = [val/c for val in vfreq_hz]
+    return vfreq
+
+
+#using constants by ORCA
+def calcfreqORCA(evalues):
+    vfreq = [np.sqrt(eval*0.1602186765*27.2107/0.529177210903/0.529177210903)*1302.78 for eval in evalues]
+    return vfreq
+
+#using constants by ORCA
+def calcfreqORCAimproved(evalues):
+    vfreq = [np.sqrt(eval*0.1602176634*27.211386245988/0.529177210903/0.529177210903)*1302.78 for eval in evalues]
     return vfreq
 
 #Give normal mode composition factors for mode j and atom a
@@ -210,16 +225,26 @@ for i,j in enumerate(elems):
 #print(atomlist)
 #Grab Hessian from Hessianfile
 hessian=Hessgrab(hessfile)
+print(hessian[5][5])
 
 #Massweight Hessian
 mwhessian,massmatrix =massweight(hessian)
 
+#print(massmatrix)
 #Diagonalize mass-weighted Hessian
 evalues,evectors = la.eigh(mwhessian) 
 evectors = np.transpose(evectors)
 
 #Calculate frequencies from eigenvalues
+
 vfreq = calcfreq(evalues)
+#print("vfreq:", vfreq)
+
+#vfreqORCA = calcfreqORCA(evalues)
+#print("vfreq from ORCA:", vfreqORCA)
+
+#vfreqORCAimproved = calcfreqORCAimproved(evalues)
+#print("vfreq from ORCA-improved:", vfreqORCAimproved)
 
 #Unweight eigenvectors to get normal modes
 nmodes = np.dot(evectors,massmatrix) 
@@ -230,6 +255,10 @@ freqs=[]
 comps=[]
 #If multiple (case: all or elements)
 allcomps=[]
+
+#Change TRmodenum to 5 if diatomic molecule since linear case
+if numatoms==2:
+    TRmodenum=5
 
 if option=="all":
     #Case: All atoms
@@ -377,7 +406,6 @@ if VDOS==True:
     print(bcolors.OKBLUE,"Lineshape function:", lineshapefunction.__name__, "(Options: Gaussian, Lorentzian, Voight)", bcolors.ENDC)
     print(bcolors.OKBLUE,"Number of points:", points, bcolors.ENDC)
     print(bcolors.OKBLUE,"FWHM broadening:", FWHM, "cm**-1",bcolors.ENDC)
-    print(bcolors.OKBLUE,"Example:", "Hess-tool.py file.hess all -VDOS 0 4000 Gaussian 10000 10 ",bcolors.ENDC)
     print("")
     #Height of stick for full composition
     stkheight=1.0
