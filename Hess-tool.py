@@ -578,8 +578,10 @@ elif mainoption=="Modecompare":
             vibA=clean_number(vfreqA[mode])
             vibB = clean_number(vfreqB[mode])
             cos_sim = np.dot(nmodesA[mode], nmodesB[mode]) / (np.linalg.norm(nmodesA[mode]) * np.linalg.norm(nmodesB[mode]))
-            #normcomplist=['{:.6f}'.format(x) for x in normcomplist]
-            line = "{:>3d}   {:>9.4f}       {:>9.4f}          {:.6f}".format(mode, vibA, vibB, cos_sim )
+            if abs(cos_sim) < 0.9:
+                line = "{:>3d}   {:>9.4f}       {:>9.4f}          {:.3f} {}".format(mode, vibA, vibB, cos_sim, "<------" )
+            else:
+                line = "{:>3d}   {:>9.4f}       {:>9.4f}          {:.3f}".format(mode, vibA, vibB, cos_sim )
             print(line)
 
 
