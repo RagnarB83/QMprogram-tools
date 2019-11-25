@@ -572,7 +572,7 @@ elif mainoption=="Modecompare":
     print(line)
     for mode in range(0,3*numatoms):
         if mode < TRmodenum:
-            line = "{:>3d}   {:>9.4f}".format(mode,0.000)
+            line = "{:>3d}   {:>9.4f}       {:>9.4f}".format(mode,0.000,0.000)
             print(line)
         else:
             vibA=clean_number(vfreqA[mode])
