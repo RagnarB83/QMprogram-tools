@@ -29,7 +29,7 @@ try:
 except IndexError:
     print(bcolors.OKGREEN,"Hess-tool: Normal mode analysis of ORCA-Hessian",bcolors.ENDC)
     print(bcolors.OKGREEN,"Script usage: Hess-tool.py ORCA-Hessianfile Atomgroup", bcolors.ENDC)
-    print(bcolors.OKGREEN,"Other option: Hess-tool.py Modecompare Hessfile1.hess Hessfile2.hess", bcolors.ENDC)
+    print(bcolors.OKGREEN,"Other option: Hess-tool.py Modecompare Hessfile1.hess Hessfile2.hess [optional: threshold]", bcolors.ENDC)
     print(bcolors.WARNING,"Atomgroup option: 'all' , 'elements', 'X' (where X is specific atomnumber) or \'X,Y,M\' (where X, Y, M etc. are atom numbers)", bcolors.ENDC)
     print(bcolors.WARNING,"Atom numbering starts from 0.",bcolors.ENDC)
     print(bcolors.WARNING,"Example: ./Hess-tool.py file.hess all", bcolors.ENDC)
@@ -165,6 +165,9 @@ def normalmodecomp(evectors,j,a):
 # Redefines complex number as normal-looking
 # Todo: deal with complex
 def clean_number(number):
+    #print("number:", number)
+    #print(type(number))
+    #print("np.real_if_close(number)", np.real_if_close(number))
     return np.real_if_close(number)
 
 #Can use intensity info. For examples oscillator strengths
@@ -485,7 +488,7 @@ if mainoption=="regular":
         print(bcolors.FAIL,"Unknown option. Doing all atoms.",bcolors.ENDC)
         option="all"
 elif mainoption=="Modecompare":
-    print(bcolors.OKBLUE,"Modecomparison: Will compare modes for hessian files for similarity (dot product):")
+    print(bcolors.OKBLUE,"Modecomparison: Will compare modes from Hessian files for similarity (cosine similarity, i.e. normalized dot product):")
     print(bcolors.OKBLUE, "Hessian-A:", hessfileA, "and Hessian-B:", hessfileB,bcolors.ENDC)
 
 
@@ -568,6 +571,40 @@ elif mainoption=="Modecompare":
     #Unweight eigenvectors to get normal modes
     nmodesA = np.dot(evectorsA,massmatrixA)
     nmodesB = np.dot(evectorsB, massmatrixB)
+
+
+    cos_sims=[]
+
+    #Dict to keep track of which mode corresponds to which (key: modeA, value=[modeB,cosinesimilarity])
+    # modeA : [modeB, cosine-similarity]
+    # Does not work for the TR modes but who cares
+
+dict_modes = {}
+for countA,A in enumerate(nmodesA):
+    for countB,B in enumerate(nmodesB):
+        #Now doing absolute cosine similarity to get rid of sign
+        cos_sim = abs(np.dot(A, B) / (np.linalg.norm(A) * np.linalg.norm(B)))
+        cos_sims.append(cos_sim)
+    #print(cos_sims)
+    #max_cos=max(cos_sims)
+    #max_cos_pos=cos_sims.index(max_cos)
+    #largest_sim_indices=[cos_sims.index(x) for x in sorted(cos_sims, reverse=True)[:3]]
+    #largest_sims=sorted( [x for x in cos_sims], reverse=True )[:3]
+    #Getting 3 largest cos_sims and their indices from whole mode-comparison
+    largest_sims_and_indices=sorted( [(i,x) for (x,i) in enumerate(cos_sims)], reverse=True )[:3]
+    #print("largest_sims_and_indices:", largest_sims_and_indices)
+    #print(largest_sims_and_indices[0][1])
+    #print("largest_sims:", largest_sims)
+
+    #dict_modes[countA] = [max_cos_pos,max_cos]
+    dict_modes[countA] = largest_sims_and_indices
+    cos_sims = []
+
+#print(dict_modes)
+printing="Modemapping"
+
+#Regular printing of modes in each Hessian from 0 to 3N with cos_sim. Assumes 1-to-1 mapping.
+if printing=="Regular":
     line = "{:>4}".format("Mode  Freq-A(cm**-1)  Freq-B(cm**-1)    Cosine-similarity")
     print(line)
     for mode in range(0,3*numatoms):
@@ -580,11 +617,93 @@ elif mainoption=="Modecompare":
             cos_sim = np.dot(nmodesA[mode], nmodesB[mode]) / (np.linalg.norm(nmodesA[mode]) * np.linalg.norm(nmodesB[mode]))
             if abs(cos_sim) < 0.9:
                 line = "{:>3d}   {:>9.4f}       {:>9.4f}          {:.3f} {}".format(mode, vibA, vibB, cos_sim, "<------" )
-            else:
-                line = "{:>3d}   {:>9.4f}       {:>9.4f}          {:.3f}".format(mode, vibA, vibB, cos_sim )
+            line = "{:>3d}   {:>9.4f}       {:>9.4f}          {:.3f}".format(mode, vibA, vibB, cos_sim )
             print(line)
+elif printing=="Modemapping":
+    print("For each mode in Hessian A, printing best corresponding mode in Hessian B.")
+    print("")
+    try:
+        threshold=float(sys.argv[4])
+    except IndexError:
+        threshold=0.9
+    print("Printing threshold for alternative matches:",  threshold)
+    print ("To change: Hess-tool.py Modecompare file1.hess file2.hess threshold")
+    print("")
+    line = "{:>4}".format("Mode(A)  Freq-A           Mode(B)   Freq-B    Cosine similarity")
+    print(line)
+    for mode in range(0,3*numatoms):
+        if mode < TRmodenum:
+            line = "{:>3d}   {:>9.4f}                   {:>9.4f}".format(mode,0.000,0.000)
+            print(line)
+        else:
+            vibA=clean_number(vfreqA[mode])
+            if np.iscomplex(vibA):
+                imagA="i"
+                vibA = float(vibA.imag)
+            else:
+                imagA=""
 
+            #For current mode in Hessian-A, determine the corresponding mode in Hessian-B:
+            #Best matching mode
+            modeB=dict_modes[mode][0][1]
+            vibB=clean_number(vfreqB[modeB])
+            if np.iscomplex(vibB):
+                imagB="i"
+                vibB = float(vibB.imag)
+            else:
+                imagB=""
 
+            cos_simab=dict_modes[mode][0][0]
+            #2nd and 3rd best matching modes
+            modeB2=dict_modes[mode][1][1]
+            #print("----")
+            vibB2=clean_number(vfreqB[modeB2])
+            #print("vfreqB[modeB2]:", vfreqB[modeB2])
+            #print("vibB2:", vibB2)
+            #print(type(vibB))
+            cos_simab2 = dict_modes[mode][1][0]
+            #exit()
+            modeB3=dict_modes[mode][2][1]
+            vibB3=clean_number(vfreqB[modeB3])
+            cos_simab3 = dict_modes[mode][2][0]
+
+            #print("cos_simab:", cos_simab)
+            #print("cos_simab2:", cos_simab2)
+            #print("cos_simab3:", cos_simab3)
+            #print("modeB:",modeB)
+            #print("vibB",vibB)
+            #vibB = clean_number(vfreqB[mode])
+
+            if cos_simab3 > threshold:
+                if mode == modeB:
+                    line = "{:>3d}   {:>9.3f}{}   {}  {} {:>3d} {}  {:>9.3f}{}          {:.3f}     {} {}  {:.3f}   {} {:>}   {:>} {:.3f} {} {}  {:.3f}   {} {:>}   {:>} {:.3f} {}".format(
+                        mode, vibA, imagA, " ===>", bcolors.OKBLUE, modeB, bcolors.ENDC, vibB, imagB, cos_simab, "Other matches:", "( Cos.sim:", cos_simab2,
+                        "Mode:", modeB2, "Freq:", vibB2, "cm**-1)", "( Cos.sim:", cos_simab3, "Mode:", modeB3, "Freq:",
+                        vibB3, "cm**-1)")
+
+                else:
+                    line = "{:>3d}   {:>9.3f}{}   {}  {} {:>3d} {}  {:>9.3f}{}          {:.3f}     {} {}  {:.3f}   {} {:>}   {:>} {:.3f} {} {}  {:.3f}   {} {:>}   {:>} {:.3f} {}".format(
+                        mode, vibA, imagA, " ===>", bcolors.WARNING, modeB, bcolors.ENDC, vibB, imagB, cos_simab, "Other matches:", "( Cos.sim:", cos_simab2,
+                        "Mode:", modeB2, "Freq:", vibB2, "cm**-1)", "( Cos.sim:", cos_simab3, "Mode:", modeB3, "Freq:",
+                        vibB3, "cm**-1)")
+
+            elif cos_simab2 > threshold:
+                if mode == modeB:
+                    line = "{:>3d}   {:>9.3f}{}   {}  {} {:>3d} {}  {:>9.3f}{}          {:.3f}     {} {}  {:.3f}   {} {:>}   {:>} {:.3f} {}".format(
+                        mode, vibA, imagA, " ===>", bcolors.OKBLUE, modeB, bcolors.ENDC, vibB, imagB, cos_simab, "Other matches:", "( Cos.sim:", cos_simab2,
+                        "Mode:", modeB2, "Freq:", vibB2, "cm**-1)")
+
+                else:
+                    line = "{:>3d}   {:>9.3f}{}   {}  {} {:>3d} {}  {:>9.3f}{}          {:.3f}     {} {}  {:.3f}   {} {:>}   {:>} {:.3f} {}".format(
+                        mode, vibA, imagA, " ===>", bcolors.WARNING, modeB, bcolors.ENDC, vibB, imagB, cos_simab, "Other matches:", "( Cos.sim:", cos_simab2,
+                        "Mode:", modeB2, "Freq:", vibB2, "cm**-1)")
+            else:
+                if mode == modeB:
+                    line = "{:>3d}   {:>9.3f}{}   {}  {} {:>3d} {}  {:>9.3f}{}          {:.3f}".format(mode, vibA, imagA, " ===>", bcolors.OKBLUE, modeB, bcolors.ENDC, vibB, imagB, cos_simab )
+                else:
+                    line = "{:>3d}   {:>9.3f}{}   {}  {} {:>3d} {}  {:>9.3f}{}          {:.3f}".format(mode, vibA, imagA, " ===>", bcolors.WARNING, modeB, bcolors.ENDC, vibB, imagB, cos_simab )
+            print(line)
+            #exit()
 print("")
 
 if VDOS==True:
