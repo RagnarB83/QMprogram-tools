@@ -31,10 +31,13 @@ WellTemp=True
 ################################
 print("Metadynamics Analysis Script by Ragnar Bjornsson")
 print("")
+
 try:
-    arg1=sys.argv[1]
+    path=sys.argv[1]
+    os.chdir(path)
+    print("Changing dir to path: ", path)
 except:
-    arg1="unset"
+    print("Assuming current dir contains COLVAR/HILLS files")
 
 
 #Checking if Multiple Walker MTD or not (by analyzing whether HILLS.X files are present or not)
@@ -51,6 +54,7 @@ except IOError:
         MultipleWalker=False
     except FileNotFoundError:
         print("Found no HILLS.X or HILLS file. Exiting...")
+        exit()
 
 
 #The plumed sum_hills command that is run.
@@ -58,7 +62,7 @@ print("")
 if MultipleWalker==True:
     #Removing old HILLS.ALL if present
     try:
-        os.system('rm HILLS.ALL')
+        os.remove('HILLS.ALL')
     except:
         pass
     #Gathering HILLS files
@@ -69,6 +73,7 @@ if MultipleWalker==True:
     COLVARFILELIST=natural_sort(glob.glob("COLVAR*"))
     print("MW= True. Concatenating files to HILLS.ALL")
     #os.system('cat HILLS.* > HILLS.ALL')
+    print("HILLSFILELIST:", HILLSFILELIST)
     with open('HILLS.ALL', 'w') as outfile:
         for hfile in HILLSFILELIST:
             with open(hfile) as infile:
@@ -293,7 +298,7 @@ if CVnum==1:
     plt.plot(rc_deg, Relfreeenergy_kcal, marker='o', linestyle='-', linewidth=1, markersize=3, label='G (kcal/mol): {} K'.format(temperature))
     if PotCurve==True:
         plt.plot(potcurve_degs, potcurve_Relenergy_kcal, marker='o', linestyle='-', markersize=3, linewidth=1, label='E (kcal/mol): 0 K', color='orange')
-    plt.legend(shadow=True, fontsize='small')
+    plt.legend(shadow=True, fontsize='xx-small', loc='upper left')
     #Subplot 2: CV vs. time. From COLVAR file/files.
     plt.subplot(2, 2, 2)
     plt.gca().set_title('CV vs. time')
@@ -305,7 +310,7 @@ if CVnum==1:
     #New. For MW-MTD we have multiple trajectories. Time should be the same
     for num,(t,cv_deg) in enumerate(zip(time_list,colvar_value_deg_list)):
         plt.plot(t, cv_deg, marker='o', linestyle='-', linewidth=0.5, markersize=2, label='Walker'+str(num))
-    plt.legend(shadow=True, fontsize='x-small')
+    #lg = plt.legend(shadow=True, fontsize='xx-small', bbox_to_anchor=(1.3, 1.0), loc='upper right')
 
     #Subplot 3: Bias potential from COLVAR
     plt.subplot(2, 2, 3)
@@ -315,7 +320,7 @@ if CVnum==1:
     plt.xlim([-180,180])
     for num,(cv_deg,biaspot) in enumerate(zip(colvar_value_deg_list,biaspot_value_kcal_list)):
         plt.scatter(cv_deg, biaspot, marker='o', linestyle='-', s=3, linewidth=1, label='Walker'+str(num))
-    plt.legend(shadow=True, fontsize='x-small')
+    #lg2 = plt.legend(shadow=True, fontsize='xx-small', bbox_to_anchor=(0.0, 0.0), loc='lower left')
 
     if WellTemp==True:
         #Subplot 4: Gaussian height from HILLS
@@ -326,7 +331,7 @@ if CVnum==1:
         for num,(th,gh) in enumerate(zip(time_hills_list,gaussheightkcal_list)):
             #plt.scatter(th, gh, marker='o', linestyle='-', s=3, linewidth=1, label='G height')
             plt.plot(th, gh, marker='o', linestyle='-', markersize=2, linewidth=0.5, label='Walker'+str(num))
-        plt.legend(shadow=True, fontsize='x-small')
+        plt.legend(shadow=True, fontsize='xx-small', loc='lower right', bbox_to_anchor=(1.3, 0.0))
 
 elif CVnum==2:
     print("CVs:", 2)
@@ -378,6 +383,7 @@ elif CVnum==2:
     colorscatter2=plt.scatter(colvar_value_deg_list_flat, colvar2_value_deg_list_flat, c=biaspot_value_kcal_list_flat, marker='o', linestyle='-', linewidth=1, cmap=cm)
     cbar2 = plt.colorbar(colorscatter2)
     cbar2.set_label('Biaspot (kcal/mol)')
+    #lg = plt.legend(fontsize='xxx-small', bbox_to_anchor=(1.05, 1.0), loc='lower left')
 
     #Subplot 4: Gaussian height
     plt.subplot(2, 2, 4)
@@ -388,10 +394,16 @@ elif CVnum==2:
     plt.xlim([0,max(time_hills_list[0])+5])
     for num,(th,gh) in enumerate(zip(time_hills_list,gaussheightkcal_list)):
         plt.plot(th, gh, marker='o', linestyle='-', markersize=2, linewidth=0.5, label='Walker'+str(num))
-    plt.legend(shadow=True, fontsize='xx-small')
+    #plt.legend(shadow=True, fontsize='xx-small')
+    plt.legend(fontsize='xxx-small', bbox_to_anchor=(1.3, 0.0), loc='lower right')
 
-
+# loc='upper right', bbox_to_anchor=(0.5, 0.5)
 #Saving figure
 maxtime=int(max(time_list[0]))
-plt.savefig("MTD_Plot-"+str(maxtime)+"ps"+".png", dpi=200)
+plt.savefig("MTD_Plot-"+str(maxtime)+"ps"+".png",
+            dpi=300,
+            format='png')
+
+ #           bbox_inches='tight')
+#bbox_extra_artists = (lg),
 plt.show()
