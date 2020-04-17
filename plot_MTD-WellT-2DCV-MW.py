@@ -68,7 +68,13 @@ if MultipleWalker==True:
     #COLVARFILELIST=sorted(glob.glob("COLVAR*"))
     COLVARFILELIST=natural_sort(glob.glob("COLVAR*"))
     print("MW= True. Concatenating files to HILLS.ALL")
-    os.system('cat HILLS.* > HILLS.ALL')
+    #os.system('cat HILLS.* > HILLS.ALL')
+    with open('HILLS.ALL', 'w') as outfile:
+        for hfile in HILLSFILELIST:
+            with open(hfile) as infile:
+                for line in infile:
+                    outfile.write(line)
+
     print("Running plumed to sum hills...")
     print("")
     os.system('plumed sum_hills --hills HILLS.ALL')
