@@ -331,7 +331,7 @@ if CVnum==1:
         for num,(th,gh) in enumerate(zip(time_hills_list,gaussheightkcal_list)):
             #plt.scatter(th, gh, marker='o', linestyle='-', s=3, linewidth=1, label='G height')
             plt.plot(th, gh, marker='o', linestyle='-', markersize=2, linewidth=0.5, label='Walker'+str(num))
-        plt.legend(shadow=True, fontsize='xx-small', loc='lower right', bbox_to_anchor=(1.3, 0.0))
+        plt.legend(shadow=True, fontsize='xx-small', loc='lower right', bbox_to_anchor=(1.2, 0.0))
 
 elif CVnum==2:
     print("CVs:", 2)
@@ -395,7 +395,7 @@ elif CVnum==2:
     for num,(th,gh) in enumerate(zip(time_hills_list,gaussheightkcal_list)):
         plt.plot(th, gh, marker='o', linestyle='-', markersize=2, linewidth=0.5, label='Walker'+str(num))
     #plt.legend(shadow=True, fontsize='xx-small')
-    plt.legend(fontsize='xxx-small', bbox_to_anchor=(1.3, 0.0), loc='lower right')
+    plt.legend(fontsize='xxx-small', bbox_to_anchor=(1.2, 0.0), loc='lower right')
 
 # loc='upper right', bbox_to_anchor=(0.5, 0.5)
 #Saving figure
