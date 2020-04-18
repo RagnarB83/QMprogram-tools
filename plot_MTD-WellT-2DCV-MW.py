@@ -1,4 +1,5 @@
 #!/bin/env python3
+#Metady
 
 import os
 import sys
@@ -12,8 +13,9 @@ def natural_sort(l):
     alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ]
     return sorted(l, key = alphanum_key)
 
-#Script settings:
-
+###############################
+#USER SETTINGS
+###############################
 #Run Plumed script to get fes.dat from HILLS
 #Setting PATH and LD_LIBRARY_PATH for PLUMED. LD-lib path to C library may also be required
 os.environ['PATH'] = '/home/bjornsson/plumed-install/bin:/usr/bin:$PATH'
@@ -24,12 +26,14 @@ WellTemp=True
 
 #Note: Script currently assumes the CV to be a torsion in radians. Gets converted to degrees.
 #Note: TODO: Support other CVs
-#PLUMED uses kJ/mol be default. This is assumed but is converted to kcal/mol here.
 
-#################################
+#PLUMED uses kJ/mol be default in its files.
+# kJ/mol units are assumed by the script, but gets converted to kcal/mol here.
+
+################################
 #END OF USER-REQUIRED SETTINGS
 ################################
-print("Metadynamics Analysis Script by Ragnar Bjornsson")
+print("Metadynamics Analysis Script")
 print("")
 
 try:
@@ -281,11 +285,11 @@ Relfreeenergy_kcal=free_energy_kcal-min(free_energy_kcal)
 ###################
 # Matplotlib part
 ###################
-print("")
+print("Data preparation done")
 print("Now plotting via Matplotlib")
 
 if CVnum==1:
-    print("CVs:", 1)
+    print("Making plots for 1 CV:")
     #Space between subplots
     plt.subplots_adjust(hspace=0.4)
     #Subplot 1: Free energy surface. From fes.dat via HILLS file (single-walker) or HILLS.X files (multiple-walker)
@@ -328,13 +332,14 @@ if CVnum==1:
         plt.gca().set_title('G-height vs. time')
         plt.xlabel('Time (ps)')
         plt.xlim([0,max(time_hills_list[0])+5])
+        plt.ylim([0,min(gaussheightkcal_list[0])*10])
         for num,(th,gh) in enumerate(zip(time_hills_list,gaussheightkcal_list)):
             #plt.scatter(th, gh, marker='o', linestyle='-', s=3, linewidth=1, label='G height')
             plt.plot(th, gh, marker='o', linestyle='-', markersize=2, linewidth=0.5, label='Walker'+str(num))
         plt.legend(shadow=True, fontsize='xx-small', loc='lower right', bbox_to_anchor=(1.2, 0.0))
 
 elif CVnum==2:
-    print("CVs:", 2)
+    print("Making plots for 2 CV:")
 
     def flatten(list):
         return [item for sublist in list for item in sublist]
@@ -348,12 +353,12 @@ elif CVnum==2:
     gaussheight_kcal_flat=flatten(gaussheight_kcal)
 
     #Space between subplots
-    plt.subplots_adjust(hspace=0.4)
-    plt.subplots_adjust(wspace=0.4)
+    plt.subplots_adjust(hspace=0.6)
+    plt.subplots_adjust(wspace=0.6)
 
     #Subplot 1: Free energy surface
     plt.subplot(2, 2, 1)
-    plt.gca().set_title('Free energy vs. CV')
+    plt.gca().set_title('Free energy vs. CV', fontsize='small', style='italic')
     plt.xlabel('Dihedral ({})'.format(dihed1atoms))
     plt.ylabel('Dihedral ({})'.format(dihed2atoms))
     plt.xlim([-180,180])
@@ -361,41 +366,42 @@ elif CVnum==2:
     cm = plt.cm.get_cmap('RdYlBu')
     colorscatter=plt.scatter(rc_deg, rc2_deg, c=Relfreeenergy_kcal, marker='o', linestyle='-', linewidth=1, cmap=cm)
     cbar = plt.colorbar(colorscatter)
-    cbar.set_label('deltaG (kcal/mol)')
+    cbar.set_label('ΔG (kcal/mol)', fontweight='bold', fontsize='xx-small')
 
     #Subplot 2: CV vs. time
     plt.subplot(2, 2, 2)
-    plt.gca().set_title('CV vs. time')
+    plt.gca().set_title('CV vs. time', fontsize='small', style='italic')
     plt.xlabel('Dihedral ({})'.format(dihed1atoms))
     plt.ylabel('Dihedral ({})'.format(dihed2atoms))
     #plt.xlim([0,max(time)+5])
     cm = plt.cm.get_cmap('RdYlBu')
     colorscatter=plt.scatter(colvar_value_deg_list_flat, colvar2_value_deg_list_flat, c=time_flat, marker='o', s=2, linestyle='-', linewidth=1, cmap=cm)
     cbar = plt.colorbar(colorscatter)
-    cbar.set_label('Time (ps)')
+    cbar.set_label('Time (ps)', fontweight='bold', fontsize='xx-small')
 
     #Subplot 3: Bias potential
     plt.subplot(2, 2, 3)
-    plt.gca().set_title('Bias potential')
+    plt.gca().set_title('Bias potential', fontsize='small', style='italic')
     plt.xlabel('Dihedral ({})'.format(dihed1atoms))
     plt.ylabel('Dihedral ({})'.format(dihed2atoms))
     cm = plt.cm.get_cmap('RdYlBu')
     colorscatter2=plt.scatter(colvar_value_deg_list_flat, colvar2_value_deg_list_flat, c=biaspot_value_kcal_list_flat, marker='o', linestyle='-', linewidth=1, cmap=cm)
     cbar2 = plt.colorbar(colorscatter2)
-    cbar2.set_label('Biaspot (kcal/mol)')
-    #lg = plt.legend(fontsize='xxx-small', bbox_to_anchor=(1.05, 1.0), loc='lower left')
+    cbar2.set_label('Biaspot (kcal/mol)', fontweight='bold', fontsize='xx-small')
+    #lg = plt.legend(fontsize='xx-small', bbox_to_anchor=(1.05, 1.0), loc='lower left')
 
     #Subplot 4: Gaussian height
     plt.subplot(2, 2, 4)
-    plt.gca().set_title('G-height vs. time')
+    plt.gca().set_title('G height vs. time', fontsize='small', style='italic')
     plt.xlabel('Time (ps)')
-    plt.ylabel('Gaussian height (kcal/mol)')
+    plt.ylabel('G height (kcal/mol)')
     plt.xlim([0,max(time_hills_list[0])+5])
-    plt.xlim([0,max(time_hills_list[0])+5])
+    #plt.xlim([0,max(time_hills_list[0])+5])
+    plt.ylim([0, min(gaussheightkcal_list[0]) * 100])
     for num,(th,gh) in enumerate(zip(time_hills_list,gaussheightkcal_list)):
-        plt.plot(th, gh, marker='o', linestyle='-', markersize=2, linewidth=0.5, label='Walker'+str(num))
+        plt.plot(th, gh, marker='o', linestyle='-', markersize=2, linewidth=0.5, label='W'+str(num))
     #plt.legend(shadow=True, fontsize='xx-small')
-    plt.legend(fontsize='xxx-small', bbox_to_anchor=(1.2, 0.0), loc='lower right')
+    plt.legend(fontsize=8, bbox_to_anchor=(1.3, 0.0), loc='lower right')
 
 # loc='upper right', bbox_to_anchor=(0.5, 0.5)
 #Saving figure
