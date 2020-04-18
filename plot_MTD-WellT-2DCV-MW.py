@@ -401,7 +401,7 @@ elif CVnum==2:
     for num,(th,gh) in enumerate(zip(time_hills_list,gaussheightkcal_list)):
         plt.plot(th, gh, marker='o', linestyle='-', markersize=2, linewidth=0.5, label='W'+str(num))
     #plt.legend(shadow=True, fontsize='xx-small')
-    plt.legend(fontsize=8, bbox_to_anchor=(1.3, 0.0), loc='lower right')
+    plt.legend(fontsize=3, bbox_to_anchor=(1.3, 0.0), loc='lower right')
 
 # loc='upper right', bbox_to_anchor=(0.5, 0.5)
 #Saving figure
