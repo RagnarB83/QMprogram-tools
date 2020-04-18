@@ -300,10 +300,10 @@ if CVnum==1:
     plt.ylabel('Energy (kcal/mol)', fontsize='small')
     plt.xlim([-180,180])
     #plt.plot(rc_deg, free_energy_kcal, marker='o', linestyle='-', markerwidth is , linewidth=1, label='G (kcal/mol)')
-    plt.plot(rc_deg, Relfreeenergy_kcal, marker='o', linestyle='-', linewidth=1, markersize=3, label='DG (kcal/mol)\n {} K'.format(temperature))
+    plt.plot(rc_deg, Relfreeenergy_kcal, marker='o', linestyle='-', linewidth=1, markersize=3, label='G({} K)'.format(temperature))
     if PotCurve==True:
-        plt.plot(potcurve_degs, potcurve_Relenergy_kcal, marker='o', linestyle='-', markersize=3, linewidth=1, label='E (kcal/mol): 0 K', color='orange')
-    plt.legend(shadow=True, fontsize='xx-small', loc='upper left')
+        plt.plot(potcurve_degs, potcurve_Relenergy_kcal, marker='o', linestyle='-', markersize=3, linewidth=1, label='E(0 K)', color='orange')
+    plt.legend(shadow=False, frameon=False, fontsize='xx-small', loc='upper left')
     #Subplot 2: CV vs. time. From COLVAR file/files.
     plt.subplot(2, 2, 2)
     plt.gca().set_title('CV vs. time', fontsize='small', style='italic', fontweight='bold')
@@ -380,6 +380,7 @@ elif CVnum==2:
     cm = plt.cm.get_cmap('RdYlBu')
     colorscatter=plt.scatter(colvar_value_deg_list_flat, colvar2_value_deg_list_flat, c=time_flat, marker='o', s=2, linestyle='-', linewidth=1, cmap=cm)
     cbar = plt.colorbar(colorscatter)
+    #cbar.ax.tick_params(labelsize=10)
     cbar.set_label('Time (ps)', fontweight='bold', fontsize='xx-small')
 
     #Subplot 3: Bias potential
