@@ -21,6 +21,15 @@ def natural_sort(l):
 os.environ['PATH'] = '/home/bjornsson/plumed-install/bin:/usr/bin:$PATH'
 os.environ['LD_LIBRARY_PATH'] = '/home/bjornsson/plumed-install/lib:/opt/gcc-4.9.1/lib64:$LD_LIBRARY_PATH'
 
+#Colormap to use in 2CV plots.
+# Perceptually uniform sequential: viridis, plasma, inferno, magma, cividis
+#Others: # RdYlBu_r
+#See https://matplotlib.org/3.1.0/tutorials/colors/colormaps.html
+colormap='RdYlBu_r'
+
+#Plot to screen, True or False
+Plot_To_Screen=False
+
 # If WellTempered MetaDynamics (generally recommended). For regular MTD a pointless plot would be generated for Welltemp=True
 WellTemp=True
 
@@ -366,7 +375,7 @@ elif CVnum==2:
     plt.ylabel('Dihedral ({})'.format(dihed2atoms), fontsize='small')
     plt.xlim([-180,180])
     plt.ylim([-180,180])
-    cm = plt.cm.get_cmap('RdYlBu_r')
+    cm = plt.cm.get_cmap(colormap)
     colorscatter=plt.scatter(rc_deg, rc2_deg, c=Relfreeenergy_kcal, marker='o', linestyle='-', linewidth=1, cmap=cm)
     cbar = plt.colorbar(colorscatter)
     cbar.set_label('ΔG (kcal/mol)', fontweight='bold', fontsize='xx-small')
@@ -377,7 +386,7 @@ elif CVnum==2:
     plt.xlabel('Dihedral ({})'.format(dihed1atoms), fontsize='small')
     plt.ylabel('Dihedral ({})'.format(dihed2atoms), fontsize='small')
     #plt.xlim([0,max(time)+5])
-    cm = plt.cm.get_cmap('RdYlBu_r')
+    cm = plt.cm.get_cmap(colormap)
     colorscatter=plt.scatter(colvar_value_deg_list_flat, colvar2_value_deg_list_flat, c=time_flat, marker='o', s=2, linestyle='-', linewidth=1, cmap=cm)
     cbar = plt.colorbar(colorscatter)
     #cbar.ax.tick_params(labelsize=10)
@@ -388,7 +397,7 @@ elif CVnum==2:
     plt.gca().set_title('Bias potential', fontsize='small', style='italic', fontweight='bold')
     plt.xlabel('Dihedral ({})'.format(dihed1atoms), fontsize='small')
     plt.ylabel('Dihedral ({})'.format(dihed2atoms), fontsize='small')
-    cm = plt.cm.get_cmap('RdYlBu_r')
+    cm = plt.cm.get_cmap(colormap)
     colorscatter2=plt.scatter(colvar_value_deg_list_flat, colvar2_value_deg_list_flat, c=biaspot_value_kcal_list_flat, marker='o', linestyle='-', linewidth=1, cmap=cm)
     cbar2 = plt.colorbar(colorscatter2)
     cbar2.set_label('Biaspot (kcal/mol)', fontweight='bold', fontsize='xx-small')
@@ -407,11 +416,11 @@ elif CVnum==2:
     #plt.legend(shadow=True, fontsize='xx-small')
     plt.legend(fontsize=3, bbox_to_anchor=(1.2, 0.0), loc='lower right')
 
-# loc='upper right', bbox_to_anchor=(0.5, 0.5)
 #Saving figure
 maxtime=int(max(time_list[0]))
 plt.savefig("MTD_Plot-"+str(maxtime)+"ps"+".png",
             dpi=300,
             format='png')
 
-plt.show()
+if Plot_To_Screen is True:
+    plt.show()
