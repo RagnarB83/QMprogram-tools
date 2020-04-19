@@ -366,7 +366,7 @@ elif CVnum==2:
     plt.ylabel('Dihedral ({})'.format(dihed2atoms), fontsize='small')
     plt.xlim([-180,180])
     plt.ylim([-180,180])
-    cm = plt.cm.get_cmap('RdYlBu')
+    cm = plt.cm.get_cmap('RdYlBu_r')
     colorscatter=plt.scatter(rc_deg, rc2_deg, c=Relfreeenergy_kcal, marker='o', linestyle='-', linewidth=1, cmap=cm)
     cbar = plt.colorbar(colorscatter)
     cbar.set_label('ΔG (kcal/mol)', fontweight='bold', fontsize='xx-small')
@@ -377,7 +377,7 @@ elif CVnum==2:
     plt.xlabel('Dihedral ({})'.format(dihed1atoms), fontsize='small')
     plt.ylabel('Dihedral ({})'.format(dihed2atoms), fontsize='small')
     #plt.xlim([0,max(time)+5])
-    cm = plt.cm.get_cmap('RdYlBu')
+    cm = plt.cm.get_cmap('RdYlBu_r')
     colorscatter=plt.scatter(colvar_value_deg_list_flat, colvar2_value_deg_list_flat, c=time_flat, marker='o', s=2, linestyle='-', linewidth=1, cmap=cm)
     cbar = plt.colorbar(colorscatter)
     #cbar.ax.tick_params(labelsize=10)
@@ -388,7 +388,7 @@ elif CVnum==2:
     plt.gca().set_title('Bias potential', fontsize='small', style='italic', fontweight='bold')
     plt.xlabel('Dihedral ({})'.format(dihed1atoms), fontsize='small')
     plt.ylabel('Dihedral ({})'.format(dihed2atoms), fontsize='small')
-    cm = plt.cm.get_cmap('RdYlBu')
+    cm = plt.cm.get_cmap('RdYlBu_r')
     colorscatter2=plt.scatter(colvar_value_deg_list_flat, colvar2_value_deg_list_flat, c=biaspot_value_kcal_list_flat, marker='o', linestyle='-', linewidth=1, cmap=cm)
     cbar2 = plt.colorbar(colorscatter2)
     cbar2.set_label('Biaspot (kcal/mol)', fontweight='bold', fontsize='xx-small')
@@ -414,6 +414,4 @@ plt.savefig("MTD_Plot-"+str(maxtime)+"ps"+".png",
             dpi=300,
             format='png')
 
- #           bbox_inches='tight')
-#bbox_extra_artists = (lg),
-#plt.show()
+plt.show()
