@@ -158,7 +158,7 @@ try:
 
                 elif 'RMSD' in line:
                     CV='RMSD'
-                    cvunit='Å'
+                    cvunit='?Å?'
                 if 'TEMP' in line:
                     for x in line.split():
                         if 'TEMP' in x:
@@ -187,10 +187,10 @@ except:
                                 dihed1atoms.append(int(z))
                     elif 'DISTANCE' in line:
                         CV = 'Distance'
-                        cvunit = 'Å'
+                        cvunit = '?Å?'
                     elif 'ANGLE' in line:
                         CV = 'Angle'
-                        cvunit = '°'
+                        cvunit = '?°?'
                         if len(angle1atoms) > 0:
                             x=line.split()[-1]
                             y=line.split('=')[-1]
@@ -203,7 +203,7 @@ except:
                                 angle1atoms.append(int(z))
                     elif 'DISTANCE' in line:
                         CV = 'Distance'
-                        cvunit = 'Å'
+                        cvunit = '?Å?'
                         if len(distance1atoms) > 0:
                             x = line.split()[-1]
                             y = line.split('=')[-1]
@@ -230,7 +230,7 @@ except:
                                 angle1atoms.append(int(z))
                     elif 'RMSD' in line:
                         CV = 'RMSD'
-                        cvunit = 'Å'
+                        cvunit = '?Å?'
                     if 'TEMP' in line:
                         for x in line.split():
                             if 'TEMP' in x:
