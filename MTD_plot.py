@@ -131,13 +131,20 @@ pi=3.14159265359
 #Get temperature from plumed.in in dir or dir above
 dihed1atoms=[]
 dihed2atoms=[]
+angle1atoms=[]
+angle2atoms=[]
+distance1atoms=[]
+distance2atoms=[]
 print("")
+
 try:
     with open("plumed.in") as pluminpfile:
         print("Found plumed.in file. Reading variables")
         for line in pluminpfile:
             if '#' not in line:
                 if 'TORSION' in line:
+                    CV='Torsion'
+                    cvunit='°'
                     if len(dihed1atoms) > 0:
                         x=line.split()[-1]
                         y=line.split('=')[-1]
@@ -148,6 +155,10 @@ try:
                         y=line.split('=')[-1]
                         for z in y.split(','):
                             dihed1atoms.append(int(z))
+
+                elif 'RMSD' in line:
+                    CV='RMSD'
+                    cvunit='Å'
                 if 'TEMP' in line:
                     for x in line.split():
                         if 'TEMP' in x:
@@ -162,6 +173,8 @@ except:
             for line in pluminpfile:
                 if '#' not in line:
                     if 'TORSION' in line:
+                        CV = 'Torsion'
+                        cvunit = '°'
                         if len(dihed1atoms) > 0:
                             x=line.split()[-1]
                             y=line.split('=')[-1]
@@ -172,6 +185,52 @@ except:
                             y=line.split('=')[-1]
                             for z in y.split(','):
                                 dihed1atoms.append(int(z))
+                    elif 'DISTANCE' in line:
+                        CV = 'Distance'
+                        cvunit = 'Å'
+                    elif 'ANGLE' in line:
+                        CV = 'Angle'
+                        cvunit = '°'
+                        if len(angle1atoms) > 0:
+                            x=line.split()[-1]
+                            y=line.split('=')[-1]
+                            for z in y.split(','):
+                                angle2atoms.append(int(z))
+                        else:
+                            x=line.split()[-1]
+                            y=line.split('=')[-1]
+                            for z in y.split(','):
+                                angle1atoms.append(int(z))
+                    elif 'DISTANCE' in line:
+                        CV = 'Distance'
+                        cvunit = 'Å'
+                        if len(distance1atoms) > 0:
+                            x = line.split()[-1]
+                            y = line.split('=')[-1]
+                            for z in y.split(','):
+                                distance2atoms.append(int(z))
+                        else:
+                            x = line.split()[-1]
+                            y = line.split('=')[-1]
+                            for z in y.split(','):
+                                distance1atoms.append(int(z))
+
+                    elif 'ANGLE' in line:
+                        CV = 'Angle'
+                        cvunit = '°'
+                        if len(angle1atoms) > 0:
+                            x=line.split()[-1]
+                            y=line.split('=')[-1]
+                            for z in y.split(','):
+                                angle2atoms.append(int(z))
+                        else:
+                            x=line.split()[-1]
+                            y=line.split('=')[-1]
+                            for z in y.split(','):
+                                angle1atoms.append(int(z))
+                    elif 'RMSD' in line:
+                        CV = 'RMSD'
+                        cvunit = 'Å'
                     if 'TEMP' in line:
                         for x in line.split():
                             if 'TEMP' in x:
@@ -182,9 +241,29 @@ except:
         print("Setting temp to unknown")
         temperature="Unknown"
 
-print("Atoms in CV1:", dihed1atoms)
-if len(dihed2atoms)>0:
-    print("Atoms in CV2:", dihed2atoms)
+print("CV:", CV)
+print("CV unit:", cvunit)
+
+if CV=='Torsion':
+    print("Atoms in CV1:", dihed1atoms)
+    CV1atoms = dihed1atoms
+    if len(dihed2atoms)>0:
+        print("Atoms in CV2:", dihed2atoms)
+        CV2atoms=dihed2atoms
+elif CV=='Angle':
+    print("Atoms in CV1:", angle1atoms)
+    CV1atoms = angle1atoms
+    if len(angle2atoms)>0:
+        print("Atoms in CV2:", angle2atoms)
+        CV2atoms = angle2atoms
+elif CV=='Distance':
+    print("Atoms in CV1:", distance1atoms)
+    CV1atoms = distance1atoms
+    if len(distanceatoms)>0:
+        print("Atoms in CV2:", distance2atoms)
+        CV2atoms = distance2atoms
+
+
 #READ HILLS. Only necessary for Well-Tempered Metadynamics and plotting of Gaussian height
 if WellTemp==True:
     time_hills=[]
@@ -218,6 +297,8 @@ colvar_value_deg_list=[]
 colvar2_value_deg_list=[]
 biaspot_value_kcal_list=[]
 time_list=[]
+finalcolvar_value_list=[]
+finalcolvar2_value_list=[]
 
 for colvarfile in COLVARFILELIST:
     with open(colvarfile) as colvarf:
@@ -244,19 +325,34 @@ for colvarfile in COLVARFILELIST:
                         exit()
                 except:
                     pass
-    #convert to deg
-    colvar_value_deg=np.array(colvar_value)*180/pi
-    colvar2_value_deg=np.array(colvar2_value)*180/pi
+    #convert to deg if torsion
+    if CV=='Torsion':
+        colvar_value_deg=np.array(colvar_value)*180/pi
+        colvar2_value_deg=np.array(colvar2_value)*180/pi
+        # New. For multiple COLVAR files we create lists of colvar_value_deg, colvar2_value_deg and biaspot_value_kcal
+        colvar_value_deg_list.append(colvar_value_deg)
+        colvar2_value_deg_list.append(colvar2_value_deg)
+
+        finalcolvar_value_list=colvar_value_deg_list
+        finalcolvar2_value_list=colvar2_value_deg_list
+
+    elif CV=='RMSD':
+        finalcolvar_value_list.append(colvar_value)
+        finalcolvar2_value_list.append(colvar2_value)
+    else:
+        finalcolvar_value_list.append(colvar_value)
+        finalcolvar2_value_list.append(colvar2_value)
+
+
     #Convert to kcal
     biaspot_value_kcal=np.array(biaspot_value)/4.184
 
-    #New. For multiple COLVAR files we create lists of colvar_value_deg, colvar2_value_deg and biaspot_value_kcal
-    colvar_value_deg_list.append(colvar_value_deg)
-    colvar2_value_deg_list.append(colvar2_value_deg)
+
     biaspot_value_kcal_list.append(biaspot_value_kcal)
     time_list.append(time)
     time=[];biaspot_value_kcal=[];colvar2_value_deg=[];colvar_value_deg=[]
     biaspot_value=[];colvar2_value=[];colvar_value=[]
+
 #READING fes.dat
 #Reaction coordinates (radian if torsion)
 rc=[]
@@ -285,8 +381,14 @@ with open("fes.dat") as fesfile:
                 derivG2.append(float(line.split()[4]))
 #rc is in rad
 #convert to deg
-rc_deg=np.array(rc)*180/pi
-rc2_deg=np.array(rc2)*180/pi
+if CV=='Torsion' or CV=='Angle':
+    rc_deg=np.array(rc)*180/pi
+    rc2_deg=np.array(rc2)*180/pi
+    final_rc=rc_deg
+    final_rc2=rc2_deg
+else:
+    final_rc=rc
+    final_rc2=rc2
 #Convert free energy from kJ/mol to kcal/mol
 free_energy_kcal=np.array(free_energy)/4.184
 Relfreeenergy_kcal=free_energy_kcal-min(free_energy_kcal)
@@ -305,11 +407,12 @@ if CVnum==1:
     #Subplot 1: Free energy surface. From fes.dat via HILLS file (single-walker) or HILLS.X files (multiple-walker)
     plt.subplot(2, 2, 1)
     plt.gca().set_title('Free energy vs. CV', fontsize='small', style='italic', fontweight='bold')
-    plt.xlabel('Torsion (°)', fontsize='small')
+    plt.xlabel('{} ({})'.format(CV,cvunit), fontsize='small')
     plt.ylabel('Energy (kcal/mol)', fontsize='small')
-    plt.xlim([-180,180])
+    if CV=='Torsion':
+        plt.xlim([-180,180])
     #plt.plot(rc_deg, free_energy_kcal, marker='o', linestyle='-', markerwidth is , linewidth=1, label='G (kcal/mol)')
-    plt.plot(rc_deg, Relfreeenergy_kcal, marker='o', linestyle='-', linewidth=1, markersize=3, label='G({} K)'.format(temperature))
+    plt.plot(final_rc, Relfreeenergy_kcal, marker='o', linestyle='-', linewidth=1, markersize=3, label='G({} K)'.format(temperature))
     if PotCurve==True:
         plt.plot(potcurve_degs, potcurve_Relenergy_kcal, marker='o', linestyle='-', markersize=3, linewidth=1, label='E(0 K)', color='orange')
     plt.legend(shadow=False, frameon=False, fontsize='xx-small', loc='upper left')
@@ -317,12 +420,12 @@ if CVnum==1:
     plt.subplot(2, 2, 2)
     plt.gca().set_title('CV vs. time', fontsize='small', style='italic', fontweight='bold')
     plt.xlabel('Time (ps)', fontsize='small')
-    plt.ylabel('Torsion (°)', fontsize='small')
+    plt.ylabel('{} ({})'.format(CV,cvunit), fontsize='small')
     #New: Using first timelist to get x-axis limit
     plt.xlim([0,max(time_list[0])+5])
 
     #New. For MW-MTD we have multiple trajectories. Time should be the same
-    for num,(t,cv_deg) in enumerate(zip(time_list,colvar_value_deg_list)):
+    for num,(t,cv_deg) in enumerate(zip(time_list,finalcolvar_value_list)):
         plt.plot(t, cv_deg, marker='o', linestyle='-', linewidth=0.5, markersize=2, label='Walker'+str(num))
     #lg = plt.legend(shadow=True, fontsize='xx-small', bbox_to_anchor=(1.3, 1.0), loc='upper right')
 
@@ -330,10 +433,13 @@ if CVnum==1:
     plt.subplot(2, 2, 3)
     #plt.title.set_text('Bias potential')
     plt.gca().set_title('Bias potential', fontsize='small', style='italic', fontweight='bold')
-    plt.xlabel('Torsion (°)', fontsize='small')
+    plt.xlabel('{} ({})'.format(CV,cvunit), fontsize='small')
     plt.ylabel('Bias potential (kcal/mol)', fontsize='small')
-    plt.xlim([-180,180])
-    for num,(cv_deg,biaspot) in enumerate(zip(colvar_value_deg_list,biaspot_value_kcal_list)):
+    if CV=='Torsion':
+        plt.xlim([-180,180])
+    #elif CV=='RMSD':
+    #    plt.xlim([min(),180])
+    for num,(cv_deg,biaspot) in enumerate(zip(finalcolvar_value_list,biaspot_value_kcal_list)):
         plt.scatter(cv_deg, biaspot, marker='o', linestyle='-', s=3, linewidth=1, label='Walker'+str(num))
     #lg2 = plt.legend(shadow=True, fontsize='xx-small', bbox_to_anchor=(0.0, 0.0), loc='lower left')
 
@@ -357,8 +463,9 @@ elif CVnum==2:
         return [item for sublist in list for item in sublist]
 
     #2CV-MW plots will be too messy so combinining walker information
-    colvar_value_deg_list_flat=flatten(colvar_value_deg_list)
-    colvar2_value_deg_list_flat=flatten(colvar2_value_deg_list)
+
+    finalcolvar_value_list_flat=flatten(finalcolvar_value_list)
+    finalcolvar2_value_list_flat=flatten(finalcolvar2_value_list)
     biaspot_value_kcal_list_flat=flatten(biaspot_value_kcal_list)
     time_hills_flat=flatten(time_hills)
     time_flat=flatten(time_list)
@@ -371,23 +478,24 @@ elif CVnum==2:
     #Subplot 1: Free energy surface
     plt.subplot(2, 2, 1)
     plt.gca().set_title('Free energy vs. CV', fontsize='small', style='italic', fontweight='bold')
-    plt.xlabel('Dihedral ({})'.format(dihed1atoms), fontsize='small')
-    plt.ylabel('Dihedral ({})'.format(dihed2atoms), fontsize='small')
-    plt.xlim([-180,180])
-    plt.ylim([-180,180])
+    plt.xlabel('{} ({})'.format(CV,CV1atoms), fontsize='small')
+    plt.ylabel('{} ({})'.format(CV,CV2atoms), fontsize='small')
+    if CV=='Torsion':
+        plt.xlim([-180,180])
+        plt.ylim([-180,180])
     cm = plt.cm.get_cmap(colormap)
-    colorscatter=plt.scatter(rc_deg, rc2_deg, c=Relfreeenergy_kcal, marker='o', linestyle='-', linewidth=1, cmap=cm)
+    colorscatter=plt.scatter(final_rc, final_rc2, c=Relfreeenergy_kcal, marker='o', linestyle='-', linewidth=1, cmap=cm)
     cbar = plt.colorbar(colorscatter)
     cbar.set_label('ΔG (kcal/mol)', fontweight='bold', fontsize='xx-small')
 
     #Subplot 2: CV vs. time
     plt.subplot(2, 2, 2)
     plt.gca().set_title('CV vs. time', fontsize='small', style='italic', fontweight='bold')
-    plt.xlabel('Dihedral ({})'.format(dihed1atoms), fontsize='small')
-    plt.ylabel('Dihedral ({})'.format(dihed2atoms), fontsize='small')
+    plt.xlabel('{} ({})'.format(CV,CV1atoms), fontsize='small')
+    plt.ylabel('{} ({})'.format(CV,CV2atoms), fontsize='small')
     #plt.xlim([0,max(time)+5])
-    cm = plt.cm.get_cmap(colormap)
-    colorscatter=plt.scatter(colvar_value_deg_list_flat, colvar2_value_deg_list_flat, c=time_flat, marker='o', s=2, linestyle='-', linewidth=1, cmap=cm)
+    cm = plt.cm.get_cmap('RdYlBu_r')
+    colorscatter=plt.scatter(finalcolvar_value_list_flat, finalcolvar2_value_list_flat, c=time_flat, marker='o', s=2, linestyle='-', linewidth=1, cmap=cm)
     cbar = plt.colorbar(colorscatter)
     #cbar.ax.tick_params(labelsize=10)
     cbar.set_label('Time (ps)', fontweight='bold', fontsize='xx-small')
@@ -395,10 +503,10 @@ elif CVnum==2:
     #Subplot 3: Bias potential
     plt.subplot(2, 2, 3)
     plt.gca().set_title('Bias potential', fontsize='small', style='italic', fontweight='bold')
-    plt.xlabel('Dihedral ({})'.format(dihed1atoms), fontsize='small')
-    plt.ylabel('Dihedral ({})'.format(dihed2atoms), fontsize='small')
+    plt.xlabel('{} ({})'.format(CV,CV1atoms), fontsize='small')
+    plt.ylabel('{} ({})'.format(CV,CV2atoms), fontsize='small')
     cm = plt.cm.get_cmap(colormap)
-    colorscatter2=plt.scatter(colvar_value_deg_list_flat, colvar2_value_deg_list_flat, c=biaspot_value_kcal_list_flat, marker='o', linestyle='-', linewidth=1, cmap=cm)
+    colorscatter2=plt.scatter(finalcolvar_value_list_flat, finalcolvar2_value_list_flat, c=biaspot_value_kcal_list_flat, marker='o', linestyle='-', linewidth=1, cmap=cm)
     cbar2 = plt.colorbar(colorscatter2)
     cbar2.set_label('Biaspot (kcal/mol)', fontweight='bold', fontsize='xx-small')
     #lg = plt.legend(fontsize='xx-small', bbox_to_anchor=(1.05, 1.0), loc='lower left')
@@ -422,5 +530,6 @@ plt.savefig("MTD_Plot-"+str(maxtime)+"ps"+".png",
             dpi=300,
             format='png')
 
+print("Plotted to file: ", "MTD_Plot-"+str(maxtime)+"ps"+".png"  )
 if Plot_To_Screen is True:
     plt.show()
