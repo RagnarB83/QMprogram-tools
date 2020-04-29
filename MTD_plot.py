@@ -37,7 +37,9 @@ WellTemp=True
 #Note: TODO: Support other CVs
 
 #PLUMED uses kJ/mol be default in its files.
-# kJ/mol units are assumed by the script, but gets converted to kcal/mol here.
+# kJ/mol units in Plumed are assumed by the script, but gets converted to kcal/mol here.
+# Dihedrals and angles are assumed to be in radians from Plumed and are converted to degrees
+# Distances and RMSDs are assumed to be in nm from Plumed and are converted to Å
 
 ################################
 #END OF USER-REQUIRED SETTINGS
@@ -158,7 +160,8 @@ try:
 
                 elif 'RMSD' in line:
                     CV='RMSD'
-                    cvunit='?Å?'
+                    #The unit we will plot
+                    cvunit='Å'
                 if 'TEMP' in line:
                     for x in line.split():
                         if 'TEMP' in x:
@@ -187,10 +190,11 @@ except:
                                 dihed1atoms.append(int(z))
                     elif 'DISTANCE' in line:
                         CV = 'Distance'
-                        cvunit = '?Å?'
+                        #What we end up with
+                        cvunit = 'Å'
                     elif 'ANGLE' in line:
                         CV = 'Angle'
-                        cvunit = '?°?'
+                        cvunit = '°'
                         if len(angle1atoms) > 0:
                             x=line.split()[-1]
                             y=line.split('=')[-1]
@@ -203,7 +207,7 @@ except:
                                 angle1atoms.append(int(z))
                     elif 'DISTANCE' in line:
                         CV = 'Distance'
-                        cvunit = '?Å?'
+                        cvunit = 'Å'
                         if len(distance1atoms) > 0:
                             x = line.split()[-1]
                             y = line.split('=')[-1]
@@ -230,7 +234,8 @@ except:
                                 angle1atoms.append(int(z))
                     elif 'RMSD' in line:
                         CV = 'RMSD'
-                        cvunit = '?Å?'
+                        #The unit we will plot
+                        cvunit = 'Å'
                     if 'TEMP' in line:
                         for x in line.split():
                             if 'TEMP' in x:
@@ -326,7 +331,7 @@ for colvarfile in COLVARFILELIST:
                 except:
                     pass
     #convert to deg if torsion
-    if CV=='Torsion':
+    if CV=='Torsion' or CV=='Angle':
         colvar_value_deg=np.array(colvar_value)*180/pi
         colvar2_value_deg=np.array(colvar2_value)*180/pi
         # New. For multiple COLVAR files we create lists of colvar_value_deg, colvar2_value_deg and biaspot_value_kcal
@@ -336,9 +341,10 @@ for colvarfile in COLVARFILELIST:
         finalcolvar_value_list=colvar_value_deg_list
         finalcolvar2_value_list=colvar2_value_deg_list
 
-    elif CV=='RMSD':
-        finalcolvar_value_list.append(colvar_value)
-        finalcolvar2_value_list.append(colvar2_value)
+    elif CV=='RMSD' or CV=='Distance':
+        #Converting from nm to A
+        finalcolvar_value_list.append(colvar_value*10)
+        finalcolvar2_value_list.append(colvar2_value*10)
     else:
         finalcolvar_value_list.append(colvar_value)
         finalcolvar2_value_list.append(colvar2_value)
@@ -379,16 +385,21 @@ with open("fes.dat") as fesfile:
                 free_energy.append(float(line.split()[2]))
                 derivG.append(float(line.split()[3]))
                 derivG2.append(float(line.split()[4]))
-#rc is in rad
-#convert to deg
+#rc is in rad. convert to deg
 if CV=='Torsion' or CV=='Angle':
     rc_deg=np.array(rc)*180/pi
     rc2_deg=np.array(rc2)*180/pi
     final_rc=rc_deg
     final_rc2=rc2_deg
+#rc is is in nm. convert to Å
+elif CV=='RMSD' or CV=='Distance'
+    rc_ang=np.array(rc)*10
+    rc2_ang=np.array(rc2)*10
+    final_rc=rc_ang
+    final_rc2=rc2_ang
 else:
-    final_rc=rc
-    final_rc2=rc2
+    print("Unknown CV...oops...")
+    exit()
 #Convert free energy from kJ/mol to kcal/mol
 free_energy_kcal=np.array(free_energy)/4.184
 Relfreeenergy_kcal=free_energy_kcal-min(free_energy_kcal)
@@ -450,7 +461,7 @@ if CVnum==1:
         plt.xlabel('Time (ps)', fontsize='small')
         plt.ylabel('G-height (kcal/mol)', fontsize='small')
         plt.xlim([0,max(time_hills_list[0])+5])
-        plt.ylim([0,min(gaussheightkcal_list[0])*10])
+        plt.ylim([0,min(gaussheightkcal_list[0])*50])
         for num,(th,gh) in enumerate(zip(time_hills_list,gaussheightkcal_list)):
             #plt.scatter(th, gh, marker='o', linestyle='-', s=3, linewidth=1, label='G height')
             plt.plot(th, gh, marker='o', linestyle='-', markersize=2, linewidth=0.5, label='W'+str(num))
