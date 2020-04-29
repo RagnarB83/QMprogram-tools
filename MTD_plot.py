@@ -343,8 +343,13 @@ for colvarfile in COLVARFILELIST:
 
     elif CV=='RMSD' or CV=='Distance':
         #Converting from nm to A
-        finalcolvar_value_list.append(colvar_value*10)
-        finalcolvar2_value_list.append(colvar2_value*10)
+        colvar_value=np.array(colvar_value)*10
+        colvar2_value=np.array(colvar2_value)*10
+        finalcolvar_value_list.append(colvar_value)
+        finalcolvar2_value_list.append(colvar2_value)
+
+        #finalcolvar_value_list=np.array(finalcolvar_value_list)
+        #finalcolvar2_value_list=np.array(finalcolvar2_value_list)
     else:
         finalcolvar_value_list.append(colvar_value)
         finalcolvar2_value_list.append(colvar2_value)
@@ -392,7 +397,7 @@ if CV=='Torsion' or CV=='Angle':
     final_rc=rc_deg
     final_rc2=rc2_deg
 #rc is is in nm. convert to Å
-elif CV=='RMSD' or CV=='Distance'
+elif CV=='RMSD' or CV=='Distance':
     rc_ang=np.array(rc)*10
     rc2_ang=np.array(rc2)*10
     final_rc=rc_ang
@@ -400,6 +405,7 @@ elif CV=='RMSD' or CV=='Distance'
 else:
     print("Unknown CV...oops...")
     exit()
+
 #Convert free energy from kJ/mol to kcal/mol
 free_energy_kcal=np.array(free_energy)/4.184
 Relfreeenergy_kcal=free_energy_kcal-min(free_energy_kcal)
@@ -427,6 +433,7 @@ if CVnum==1:
     if PotCurve==True:
         plt.plot(potcurve_degs, potcurve_Relenergy_kcal, marker='o', linestyle='-', markersize=3, linewidth=1, label='E(0 K)', color='orange')
     plt.legend(shadow=False, frameon=False, fontsize='xx-small', loc='upper left')
+
     #Subplot 2: CV vs. time. From COLVAR file/files.
     plt.subplot(2, 2, 2)
     plt.gca().set_title('CV vs. time', fontsize='small', style='italic', fontweight='bold')
@@ -436,8 +443,8 @@ if CVnum==1:
     plt.xlim([0,max(time_list[0])+5])
 
     #New. For MW-MTD we have multiple trajectories. Time should be the same
-    for num,(t,cv_deg) in enumerate(zip(time_list,finalcolvar_value_list)):
-        plt.plot(t, cv_deg, marker='o', linestyle='-', linewidth=0.5, markersize=2, label='Walker'+str(num))
+    for num,(t,cv) in enumerate(zip(time_list,finalcolvar_value_list)):
+        plt.plot(t, cv, marker='o', linestyle='-', linewidth=0.5, markersize=2, label='Walker'+str(num))
     #lg = plt.legend(shadow=True, fontsize='xx-small', bbox_to_anchor=(1.3, 1.0), loc='upper right')
 
     #Subplot 3: Bias potential from COLVAR
@@ -450,8 +457,8 @@ if CVnum==1:
         plt.xlim([-180,180])
     #elif CV=='RMSD':
     #    plt.xlim([min(),180])
-    for num,(cv_deg,biaspot) in enumerate(zip(finalcolvar_value_list,biaspot_value_kcal_list)):
-        plt.scatter(cv_deg, biaspot, marker='o', linestyle='-', s=3, linewidth=1, label='Walker'+str(num))
+    for num,(cv,biaspot) in enumerate(zip(finalcolvar_value_list,biaspot_value_kcal_list)):
+        plt.scatter(cv, biaspot, marker='o', linestyle='-', s=3, linewidth=1, label='Walker'+str(num))
     #lg2 = plt.legend(shadow=True, fontsize='xx-small', bbox_to_anchor=(0.0, 0.0), loc='lower left')
 
     if WellTemp==True:
