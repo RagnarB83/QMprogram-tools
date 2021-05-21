@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-# Make 
+# MO-plot-vertical
+
+# Option to print only occupied or occupied and verticals.
+#OccOnly=True  only occ. OccOnly=False  both coc and vit
+OccOnly=False
 
 #Pointsize
 pointsize=4000
@@ -11,16 +15,18 @@ linewidth=2
 # probably unnecessary to change anything below
 ##################################################
 
+
 #Lists and defintions
-occorbsgrab="unset"
-virtorbsgrab="unset"
+occorbsgrab=False
+virtorbsgrab=False
 endocc="unset"
 tddftgrab="unset"
 tddft="unset"
 
 bands_alpha=[]
 bands_beta=[]
-virtbands=[]
+virtbands_a=[]
+virtbands_b=[]
 f=[]
 virtf=[]
 tddftstates=[]
@@ -31,6 +37,8 @@ hftyp="unset"
 import sys
 with open(sys.argv[1]) as file:
     for line in file:
+        #print("spinflag:",spinflag)
+        #print("occorbsgrab:", occorbsgrab, "virtorbsgrab:", virtorbsgrab)
         if '%tddft' in line:
             tddft="yes"
         if 'Hartree-Fock type      HFTyp' in line:
@@ -43,36 +51,45 @@ with open(sys.argv[1]) as file:
             spinflag="alpha"
         if 'SPIN DOWN ORBITALS' in line:
             spinflag="beta"
-        if occorbsgrab=="yes":
+        if occorbsgrab==True:
             endocc=line.split()[1]
             if endocc == "0.0000" :
-                occorbsgrab="no"
-                #virtorbsgrab="yes"
+                occorbsgrab=False
+                virtorbsgrab=True
             else:
                 if spinflag=="alpha":
-                    #print("adding alpha:", line.split()[3])
                     bands_alpha.append(float(line.split()[3]))
                 if spinflag=="beta":
                     bands_beta.append(float(line.split()[3]))
-                    #print("adding beta:", line.split()[3])
+        if virtorbsgrab==True:
+            print("line2:", line)
+            if '------------------' in line:
+                break
+            if line == '\n':
+                print("Setting virtorbs to false", line)
+                virtorbsgrab=False
+                spinflag="unset"
+                continue
+            if spinflag=="alpha":
+                virtbands_a.append(float(line.split()[3]))
+            if spinflag=="beta":
+                virtbands_b.append(float(line.split()[3]))
+            endvirt=line.split()[1]
         if 'NO   OCC          E(Eh)            E(eV)' in line:
-            occorbsgrab="yes"
+            occorbsgrab=True
 
-#Grabbing TDDFT sates
-if tddft=="yes":
-    with open(sys.argv[1]) as file:
-        for line in file:
-            if tddftgrab=="yes":
-                if 'STATE' in line:
-                    tddftstates.append(float(line.split()[5]))
-                tddftgrab="yes"
-            if 'the weight of the individual excitations' in line:
-                tddftgrab="yes"
 
-print("Occupied MOs are (eV):")
+print("Occupied MOs-alpha are (eV):")
 print(bands_alpha)
+print("")
+print("Occupied MOs-beta are (eV):")
 print(bands_beta)
-
+print("")
+print("virtual alpha")
+print(virtbands_a)
+print("")
+print("virtual beta")
+print(virtbands_b)
 # Check for numpy and matplotlib, try to exit gracefully if not found
 import imp
 import matplotlib.pyplot
@@ -98,22 +115,33 @@ import matplotlib.pyplot as plt
 import math
 
 
+if OccOnly==True:
+    print("OccOnly True! Plotting only occupied orbital levels")
+else:
+    print("OccOnly False! Plotting occupied and virtual orbital levels")
+
 fig, ax = plt.subplots()
 #Alpha MOs
 ax.scatter([1]*len(bands_alpha), bands_alpha, color='blue', marker = '_',  s=pointsize, linewidth=linewidth )
+if OccOnly!=True:
+    ax.scatter([1]*len(virtbands_a), virtbands_a, color='cyan', marker = '_',  s=pointsize, linewidth=linewidth )
 
 #Beta MOs
 if hftyp == "UHF":
     ax.scatter([1.05]*len(bands_beta), bands_beta, color='red', marker = '_',  s=pointsize, linewidth=linewidth )
+    if OccOnly!=True:
+        ax.scatter([1.05]*len(virtbands_b), virtbands_b, color='pink', marker = '_',  s=pointsize, linewidth=linewidth )
 
 plt.xlim(0.98,1.07)
-plt.ylim(-5,3)
+plt.ylim(-12,3)
 plt.xticks([])
 plt.ylabel('MO energy (eV)')
 
 #Vertical line
 plt.axhline(y=0.0, color='black', linestyle='--')
 plt.savefig(str(sys.argv[1])+'.png', format='png', dpi=200)
+
+
 
 plt.show()
 
